@@ -1,7 +1,13 @@
 #!/bin/bash
 set -e
+
+# Install pnpm dependencies (for any remaining Node.js lib packages)
 pnpm install --frozen-lockfile
-pnpm --filter @workspace/db push
+
+# Push DB schema — non-fatal, only runs if DATABASE_URL is available
+if [ -n "${DATABASE_URL:-}" ]; then
+  pnpm --filter @workspace/db push || echo "DB push skipped or failed (non-fatal)"
+fi
 
 # Reinstall git hooks into .git/hooks/ so they survive container restarts
 bash "$(git rev-parse --show-toplevel)/scripts/setup-hooks.sh"
