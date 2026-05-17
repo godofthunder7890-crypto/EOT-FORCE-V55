@@ -27,5 +27,5 @@ fi
 BRANCH=$(git --no-optional-locks rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
 
 echo "Pushing to GitHub: $GITHUB_REPO (branch: $BRANCH)..."
-git push github "$BRANCH" --force
+git push github "$BRANCH" --force-with-lease
 echo "Done! Successfully pushed to https://github.com/$GITHUB_REPO"

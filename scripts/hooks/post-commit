@@ -1,0 +1,12 @@
+#!/bin/bash
+# Git post-commit hook — pushes to GitHub synchronously so failures are visible.
+# Installed automatically by scripts/setup-hooks.sh (copies to .git/hooks/).
+# Called by scripts/post-merge.sh after every task merge.
+# Skips when credentials are absent (non-fatal).
+
+if [ -z "${GITHUB_ACCESS_TOKEN:-}" ] || [ -z "${GITHUB_REPO:-}" ]; then
+  exit 0
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+bash "$REPO_ROOT/scripts/github-push.sh"
