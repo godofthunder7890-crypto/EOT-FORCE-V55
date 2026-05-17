@@ -63,24 +63,79 @@ CUSTOM_CSS = """
     letter-spacing: 1px;
     background: #0a0a0a;
   }
+  /* Aggressively hide Replit badge — all known selectors */
+  iframe[src*="replit"],
+  [class*="replit-badge"],
+  [id*="replit-badge"],
+  [class*="replitBadge"],
+  [id*="replitBadge"],
+  a[href*="replit.com/@"],
+  div[style*="z-index: 9999"] iframe,
+  div[style*="z-index:9999"] iframe {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
 </style>
 """
 
 CUSTOM_JS = """
 <script>
-  window.onload = function() {
-    // Remove any injected badges
-    setTimeout(() => {
-      document.querySelectorAll('[class*="replit"], [id*="replit"], [src*="replit"]').forEach(el => el.remove());
-      document.querySelectorAll('a[href*="replit"]').forEach(el => el.closest('div') && el.closest('div').remove());
-    }, 1000);
-    setTimeout(() => {
-      const footer = document.createElement('div');
-      footer.id = 'hell52-footer';
-      footer.innerHTML = '⚡ Made by HELL 52 ⚡';
-      document.body.appendChild(footer);
-    }, 1500);
+  function removeReplitBadge() {
+    const selectors = [
+      'iframe[src*="replit"]',
+      '[class*="replit-badge"]',
+      '[id*="replit-badge"]',
+      '[class*="replitBadge"]',
+      '[id*="replitBadge"]',
+      'a[href*="replit.com/@"]'
+    ];
+    selectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        el.style.display = 'none';
+        el.remove();
+      });
+    });
+    // Also remove any fixed-position iframes (Replit badge is fixed)
+    document.querySelectorAll('iframe').forEach(el => {
+      if (el.src && el.src.includes('replit')) el.remove();
+    });
+    // Remove parent containers of replit links
+    document.querySelectorAll('a[href*="replit"]').forEach(el => {
+      const parent = el.closest('div[style]') || el.parentElement;
+      if (parent && parent !== document.body) parent.remove();
+    });
   }
+
+  // Run immediately and on load
+  removeReplitBadge();
+  window.addEventListener('load', removeReplitBadge);
+
+  // MutationObserver — watches DOM changes and removes badge if injected later
+  const observer = new MutationObserver(() => removeReplitBadge());
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  // Keep removing every 500ms for 10 seconds just in case
+  let count = 0;
+  const interval = setInterval(() => {
+    removeReplitBadge();
+    if (++count > 20) clearInterval(interval);
+  }, 500);
+
+  // Add HELL 52 footer after page loads
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      if (!document.getElementById('hell52-footer')) {
+        const footer = document.createElement('div');
+        footer.id = 'hell52-footer';
+        footer.innerHTML = '⚡ Made by HELL 52 ⚡';
+        document.body.appendChild(footer);
+      }
+    }, 1000);
+  });
 </script>
 """
 
