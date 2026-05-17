@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: eot-force-api
+    name: eot-force-v55-api
     runtime: python
     rootDir: artifacts/api-server
     buildCommand: pip install -r requirements.txt
@@ -8,6 +8,16 @@ services:
     plan: free
     envVars:
       - key: SUPABASE_DATABASE_URL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: GOD_MODE_KEY
+        sync: false
+      - key: GOD_BYPASS_TOKEN
+        sync: false
+      - key: DISCORD_WEBHOOK_URL
         sync: false
       - key: GITHUB_ACCESS_TOKEN
         sync: false
