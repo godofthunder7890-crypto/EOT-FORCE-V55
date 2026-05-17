@@ -1,45 +1,56 @@
-# [Project name]
+# API Server (FastAPI + Supabase)
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A Python FastAPI backend connected to Supabase PostgreSQL.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Server auto-starts via workflow on port 8080
+- Dev command: `cd artifacts/api-server && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8080`
+- Health check: `curl http://localhost:80/api/healthz`
+- API docs (auto-generated): `http://localhost:80/api/docs`
+- Required env: `SUPABASE_DATABASE_URL` — Supabase PostgreSQL connection string
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Python 3.11
+- FastAPI + Uvicorn
+- SQLAlchemy (async) + asyncpg
+- Pydantic v2
+- Supabase (PostgreSQL)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/api-server/main.py` — FastAPI app entry point
+- `artifacts/api-server/database.py` — SQLAlchemy + Supabase connection
+- `artifacts/api-server/schemas.py` — Pydantic request/response models
+- `artifacts/api-server/routers/` — Route handlers
+- `artifacts/api-server/requirements.txt` — Python dependencies
+- `lib/api-spec/openapi.yaml` — OpenAPI spec (for reference)
+- `lib/` — Legacy Node.js libs (unused, can be removed later)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- FastAPI chosen for modern async support, auto-generated OpenAPI docs, and Pydantic v2 integration
+- SQLAlchemy async engine with asyncpg driver for non-blocking DB access
+- Database connection is lazy — server starts even without SUPABASE_DATABASE_URL
+- CORS enabled for all origins (restrict in production as needed)
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+REST API server with health check endpoint. Ready to add GitHub integration routes and Supabase-backed data models.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Python FastAPI preferred over Node.js/TypeScript
+- Supabase for database (not Replit's built-in DB)
+- GitHub access token and repo stored as secrets
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- `SUPABASE_DATABASE_URL` must start with `postgresql://` or `postgres://` — asyncpg driver is applied automatically
+- Run `pip install -r artifacts/api-server/requirements.txt` if packages are missing
 
 ## Pointers
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- FastAPI auto docs available at `/api/docs` and `/api/redoc`
+- Add new routes in `artifacts/api-server/routers/` and register in `main.py`
