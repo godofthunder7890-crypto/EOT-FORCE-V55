@@ -2,7 +2,10 @@ import os
 import time
 import platform
 import psutil
-from fastapi import APIRouter, Header, HTTPException
+from collections import deque
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from sqlalchemy import text
 
 from database import engine
@@ -10,14 +13,64 @@ from database import engine
 router = APIRouter(tags=["admin"])
 
 START_TIME = time.time()
-_request_log = []
 
-ADMIN_KEY = os.environ.get("ADMIN_SECRET_KEY", "hell52-admin-2024")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "hell52secret")
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "hell52-token-xK9mP2vQ")
+
+_request_log = deque(maxlen=200)
+_blocked_ips = set()
+_rate_tracker = {}
 
 
-def require_admin(x_admin_key: str = Header(default="")):
-    if x_admin_key != ADMIN_KEY:
-        raise HTTPException(status_code=401, detail="Invalid admin key. Set X-Admin-Key header.")
+def log_request(ip: str, method: str, path: str, status: int, duration_ms: float):
+    _request_log.appendleft({
+        "ip": ip,
+        "method": method,
+        "path": path,
+        "status": status,
+        "duration_ms": round(duration_ms, 1),
+        "time": time.strftime("%H:%M:%S"),
+        "timestamp": time.time(),
+    })
+
+
+def is_blocked(ip: str) -> bool:
+    return ip in _blocked_ips
+
+
+def block_ip_direct(ip: str):
+    _blocked_ips.add(ip)
+
+
+def check_rate(ip: str, limit: int = 60) -> bool:
+    now = time.time()
+    window = 60
+    if ip not in _rate_tracker:
+        _rate_tracker[ip] = []
+    _rate_tracker[ip] = [t for t in _rate_tracker[ip] if now - t < window]
+    if len(_rate_tracker[ip]) >= limit:
+        return False
+    _rate_tracker[ip].append(now)
+    return True
+
+
+class LoginRequest(BaseModel):
+    password: str
+
+
+@router.post("/login")
+async def admin_login(body: LoginRequest):
+    if body.password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Wrong password")
+    return {"token": ADMIN_TOKEN, "status": "ok"}
+
+
+@router.post("/verify")
+async def verify_token(request: Request):
+    token = request.headers.get("X-Admin-Token", "")
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return {"valid": True}
 
 
 @router.get("/stats")
@@ -45,6 +98,9 @@ async def get_stats():
 
     from routers.threats import get_cache
     threat_cache = get_cache()
+
+    total_reqs = len(_request_log)
+    blocked_reqs = sum(1 for r in _request_log if r["status"] == 429)
 
     return {
         "server": {
@@ -74,14 +130,54 @@ async def get_stats():
             "power_level": threat_cache.get("power_level", 1.0),
             "threat_updates": threat_cache.get("update_count", 0),
             "last_threat_update": int(time.time() - threat_cache.get("last_updated", time.time())),
+            "total_requests": total_reqs,
+            "blocked_requests": blocked_reqs,
+            "blocked_ips": len(_blocked_ips),
         },
         "endpoints": [
             {"method": "GET",  "path": "/api/healthz",         "description": "Health check"},
             {"method": "GET",  "path": "/api/admin/stats",     "description": "Server stats"},
+            {"method": "GET",  "path": "/api/admin/logs",      "description": "Request logs"},
             {"method": "GET",  "path": "/api/threats",         "description": "Threat intelligence"},
             {"method": "POST", "path": "/api/threats/refresh", "description": "Force threat DB update"},
             {"method": "GET",  "path": "/api/docs",            "description": "Swagger UI"},
-            {"method": "GET",  "path": "/api/redoc",           "description": "ReDoc"},
             {"method": "GET",  "path": "/api/admin/panel",     "description": "Admin Dashboard"},
         ],
     }
+
+
+@router.get("/logs")
+async def get_logs(limit: int = 100):
+    logs = list(_request_log)[:limit]
+    unique_ips = list(set(r["ip"] for r in logs))
+    return {
+        "total": len(logs),
+        "unique_ips": len(unique_ips),
+        "blocked_ips": list(_blocked_ips),
+        "logs": logs,
+    }
+
+
+class BlockIPRequest(BaseModel):
+    ip: str
+
+
+@router.post("/block-ip")
+async def block_ip(body: BlockIPRequest, request: Request):
+    token = request.headers.get("X-Admin-Token", "")
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    _blocked_ips.add(body.ip)
+    from routers.notifications import alert_ip_blocked
+    import asyncio
+    asyncio.create_task(alert_ip_blocked(body.ip))
+    return {"status": "blocked", "ip": body.ip}
+
+
+@router.post("/unblock-ip")
+async def unblock_ip(body: BlockIPRequest, request: Request):
+    token = request.headers.get("X-Admin-Token", "")
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    _blocked_ips.discard(body.ip)
+    return {"status": "unblocked", "ip": body.ip}

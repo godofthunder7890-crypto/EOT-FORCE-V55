@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HELL 52 — 404</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a0a;color:#eee;font-family:'Segoe UI',sans-serif;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.container{text-align:center;padding:40px;}
+.code{font-size:120px;font-weight:900;color:#ff3333;line-height:1;text-shadow:0 0 40px #ff333355;animation:glow 2s ease-in-out infinite;}
+@keyframes glow{0%,100%{text-shadow:0 0 40px #ff333355;}50%{text-shadow:0 0 80px #ff3333aa;}}
+.title{font-size:24px;font-weight:700;letter-spacing:3px;color:#eee;margin:16px 0 8px;}
+.sub{color:#666;font-size:14px;margin-bottom:32px;}
+.brand{font-size:13px;color:#ff3333;letter-spacing:4px;font-weight:900;margin-bottom:24px;}
+.btn{display:inline-block;padding:12px 28px;background:#ff3333;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:13px;letter-spacing:1px;transition:.2s;}
+.btn:hover{background:#cc2222;}
+.particles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:-1;}
+.particle{position:absolute;width:2px;height:2px;background:#ff3333;border-radius:50%;animation:fall linear infinite;}
+@keyframes fall{0%{transform:translateY(-10px);opacity:1;}100%{transform:translateY(100vh);opacity:0;}}
+</style>
+</head>
+<body>
+<div class="particles" id="p"></div>
+<div class="container">
+  <div class="code">404</div>
+  <div class="brand">⚡ HELL 52 ⚡</div>
+  <div class="title">PAGE NOT FOUND</div>
+  <div class="sub">The page you're looking for doesn't exist or has been moved.</div>
+  <a href="/api/admin/panel" class="btn">Go to Dashboard</a>
+</div>
+<script>
+const p=document.getElementById('p');
+for(let i=0;i<30;i++){
+  const d=document.createElement('div');
+  d.className='particle';
+  d.style.left=Math.random()*100+'%';
+  d.style.animationDuration=(Math.random()*3+2)+'s';
+  d.style.animationDelay=(Math.random()*5)+'s';
+  d.style.opacity=Math.random();
+  p.appendChild(d);
+}
+</script>
+</body>
+</html>

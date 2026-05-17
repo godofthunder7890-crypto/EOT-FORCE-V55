@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HELL 52 — System Status</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--red:#ff3333;--dark:#0a0a0a;--card:#111;--green:#00ff88;--muted:#888;}
+body{background:var(--dark);color:#eee;font-family:'Segoe UI',sans-serif;min-height:100vh;}
+.header{background:#0d0d0d;border-bottom:2px solid var(--red);padding:24px;text-align:center;}
+.logo{font-size:28px;font-weight:900;color:var(--red);letter-spacing:4px;}
+.sub{color:var(--muted);font-size:12px;margin-top:4px;letter-spacing:1px;}
+.container{max-width:700px;margin:32px auto;padding:0 20px;}
+.status-banner{background:#001a0a;border:1px solid var(--green);border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;}
+.status-dot{width:16px;height:16px;background:var(--green);border-radius:50%;display:inline-block;animation:pulse 2s infinite;margin-right:10px;vertical-align:middle;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 #00ff8866;}50%{box-shadow:0 0 0 8px transparent;}}
+.status-text{font-size:18px;font-weight:700;color:var(--green);vertical-align:middle;}
+.status-time{color:var(--muted);font-size:12px;margin-top:6px;}
+.card{background:var(--card);border:1px solid #222;border-radius:12px;padding:20px;margin-bottom:16px;}
+.card-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;}
+.metric-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #1a1a1a;}
+.metric-row:last-child{border:none;}
+.metric-name{font-size:13px;color:#ccc;}
+.metric-val{font-size:13px;font-weight:700;}
+.ok{color:var(--green);} .warn{color:#ffcc00;} .err{color:var(--red);}
+.uptime-bar{height:6px;background:#1a1a1a;border-radius:3px;overflow:hidden;margin-top:6px;}
+.uptime-fill{height:100%;background:var(--green);border-radius:3px;width:100%;}
+.footer{text-align:center;padding:24px;color:#333;font-size:11px;letter-spacing:2px;}
+.refresh-note{text-align:center;color:#444;font-size:11px;margin-bottom:24px;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">⚡ HELL 52</div>
+  <div class="sub">System Status Page — Real-time monitoring</div>
+</div>
+<div class="container">
+  <div class="status-banner">
+    <span class="status-dot"></span>
+    <span class="status-text" id="overall-status">All Systems Operational</span>
+    <div class="status-time" id="status-time">Checking...</div>
+  </div>
+  <div class="refresh-note">Auto-refreshes every 30 seconds</div>
+  <div class="card">
+    <div class="card-title">📡 Services</div>
+    <div class="metric-row"><span class="metric-name">API Server</span><span class="metric-val ok" id="svc-api">Checking...</span></div>
+    <div class="metric-row"><span class="metric-name">Health Check</span><span class="metric-val ok" id="svc-health">Checking...</span></div>
+    <div class="metric-row"><span class="metric-name">Threat Intelligence</span><span class="metric-val ok" id="svc-threats">Checking...</span></div>
+    <div class="metric-row"><span class="metric-name">Database</span><span class="metric-val" id="svc-db">Checking...</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚙️ Performance</div>
+    <div class="metric-row"><span class="metric-name">Uptime</span><span class="metric-val ok" id="p-uptime">--</span></div>
+    <div class="metric-row"><span class="metric-name">CPU Usage</span><span class="metric-val" id="p-cpu">--</span></div>
+    <div class="metric-row"><span class="metric-name">Memory Usage</span><span class="metric-val" id="p-mem">--</span></div>
+    <div class="metric-row"><span class="metric-name">Power Level</span><span class="metric-val" style="color:var(--red)" id="p-power">--</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🛡 Security</div>
+    <div class="metric-row"><span class="metric-name">Rate Limiting</span><span class="metric-val ok">Active ✅</span></div>
+    <div class="metric-row"><span class="metric-name">IP Blocking</span><span class="metric-val ok">Active ✅</span></div>
+    <div class="metric-row"><span class="metric-name">Threat DB</span><span class="metric-val ok" id="sec-threats">--</span></div>
+    <div class="metric-row"><span class="metric-name">Blocked IPs</span><span class="metric-val" id="sec-blocked">--</span></div>
+  </div>
+</div>
+<div class="footer">⚡ MADE BY HELL 52 ⚡ — All rights reserved</div>
+<script>
+async function checkStatus(){
+  try{
+    const r=await fetch('/api/admin/stats');
+    const d=await r.json();
+    document.getElementById('svc-api').textContent='Operational ✅';
+    document.getElementById('svc-health').textContent='Operational ✅';
+    document.getElementById('svc-threats').textContent=d.security.threat_db_count+' threats loaded ✅';
+    const dbOk=d.database.status==='connected';
+    document.getElementById('svc-db').className='metric-val '+(dbOk?'ok':'err');
+    document.getElementById('svc-db').textContent=dbOk?'Connected ✅':'Disconnected ⚠️';
+    document.getElementById('p-uptime').textContent=d.server.uptime;
+    const cpu=d.system.cpu_percent;
+    document.getElementById('p-cpu').textContent=cpu+'%';
+    document.getElementById('p-cpu').className='metric-val '+(cpu>80?'err':cpu>60?'warn':'ok');
+    const mem=d.system.memory_percent;
+    document.getElementById('p-mem').textContent=mem+'%';
+    document.getElementById('p-mem').className='metric-val '+(mem>85?'err':mem>70?'warn':'ok');
+    document.getElementById('p-power').textContent=d.security.power_level+'x ⚡';
+    document.getElementById('sec-threats').textContent=d.security.threat_db_count+' known threats';
+    document.getElementById('sec-blocked').textContent=d.security.blocked_ips+' IPs';
+    document.getElementById('overall-status').textContent='All Systems Operational';
+    document.getElementById('status-time').textContent='Last checked: '+new Date().toLocaleString();
+  }catch(e){
+    document.getElementById('overall-status').textContent='Service Disruption Detected';
+    document.getElementById('overall-status').style.color='var(--red)';
+  }
+}
+checkStatus();
+setInterval(checkStatus,30000);
+</script>
+</body>
+</html>
