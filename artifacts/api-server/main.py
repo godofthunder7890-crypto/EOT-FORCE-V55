@@ -16,6 +16,9 @@ app = FastAPI(
     version="0.1.0",
     description="FastAPI backend with Supabase",
     lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
 app.add_middleware(

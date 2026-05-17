@@ -18,7 +18,7 @@ run = "cd /home/runner/workspace/artifacts/api-server && python -m uvicorn main:
 [services.production]
 
 [services.production.run]
-args = ["bash", "-c", "cd /home/runner/workspace/artifacts/api-server && python -m uvicorn main:app --host 0.0.0.0 --port 8080 --log-level info"]
+args = ["bash", "-c", "cd /home/runner/workspace/artifacts/api-server && python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 2 --log-level info"]
 
 [services.production.run.env]
 PORT = "8080"
