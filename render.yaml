@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: eot-force-api
+    runtime: python
+    rootDir: artifacts/api-server
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT --workers 2 --log-level info
+    plan: free
+    envVars:
+      - key: SUPABASE_DATABASE_URL
+        sync: false
+      - key: GITHUB_ACCESS_TOKEN
+        sync: false
+      - key: GITHUB_REPO
+        sync: false
